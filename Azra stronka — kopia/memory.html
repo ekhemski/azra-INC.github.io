@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory Cards – Azra</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;padding:1rem}
+h1{font-size:2rem;background:linear-gradient(135deg,#f59e0b,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:.5rem;letter-spacing:3px}
+#info{margin-bottom:1rem;font-weight:600;font-size:1rem;color:#a0a0c0}
+.grid{display:grid;grid-template-columns:repeat(4,80px);gap:10px;margin-bottom:1rem}
+.card{width:80px;height:100px;border-radius:10px;cursor:pointer;perspective:1000px;position:relative}
+.card-inner{width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d;position:relative}
+.card.flipped .card-inner{transform:rotateY(180deg)}
+.card-front,.card-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:2.5rem}
+.card-back{background:linear-gradient(135deg,#1a1a3e,#2a2a5e);border:2px solid rgba(168,85,247,.3);font-size:1.5rem}
+.card-front{background:linear-gradient(135deg,#1a1a3e,#111128);border:2px solid #a855f7;transform:rotateY(180deg)}
+.card.matched .card-front{border-color:#10b981;box-shadow:0 0 15px rgba(16,185,129,.4)}
+.card.matched{pointer-events:none}
+#restart{padding:.8rem 2rem;font-size:1rem;font-weight:700;border:none;border-radius:8px;background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff;cursor:pointer;margin-top:.5rem}
+#restart:hover{transform:scale(1.05);box-shadow:0 0 20px rgba(168,85,247,.5)}
+@media(max-width:400px){.grid{grid-template-columns:repeat(4,65px);gap:8px}.card{width:65px;height:80px}.card-front,.card-back{font-size:2rem}}
+</style>
+</head>
+<body>
+<h1>🃏 MEMORY</h1>
+<div id="info">Ruchy: <span id="moves">0</span> | Pary: <span id="pairs">0</span>/8</div>
+<div class="grid" id="grid"></div>
+<button id="restart" onclick="init()">🔄 Od nowa</button>
+
+<script>
+const emojis=['🎮','🚀','🏎️','🐍','⚡','🔥','💎','🎯'];
+let cards,flipped,matched,moves,lock;
+
+function init(){
+    let arr=[...emojis,...emojis];
+    // Shuffle
+    for(let i=arr.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}
+    cards=arr;flipped=[];matched=0;moves=0;lock=false;
+    document.getElementById('moves').textContent=0;
+    document.getElementById('pairs').textContent=0;
+    let grid=document.getElementById('grid');grid.innerHTML='';
+    cards.forEach((emoji,i)=>{
+        let card=document.createElement('div');card.className='card';card.dataset.idx=i;
+        card.innerHTML=`<div class="card-inner"><div class="card-back">❓</div><div class="card-front">${emoji}</div></div>`;
+        card.onclick=()=>flip(card,i);
+        grid.appendChild(card);
+    });
+}
+
+function flip(card,idx){
+    if(lock||card.classList.contains('flipped')||card.classList.contains('matched'))return;
+    card.classList.add('flipped');flipped.push({card,idx});
+    if(flipped.length===2){
+        moves++;document.getElementById('moves').textContent=moves;
+        lock=true;
+        let[a,b]=flipped;
+        if(cards[a.idx]===cards[b.idx]){
+            a.card.classList.add('matched');b.card.classList.add('matched');
+            matched++;document.getElementById('pairs').textContent=matched;
+            flipped=[];lock=false;
+            if(matched===8){
+                setTimeout(()=>{
+                    alert('🎉 Gratulacje! Ukończono w '+moves+' ruchach!');
+                    try{window.parent.postMessage({type:'azra_score',score:Math.max(10,(100-moves)*5)},'*')}catch(e){}
+                },500);
+            }
+        }else{
+            setTimeout(()=>{a.card.classList.remove('flipped');b.card.classList.remove('flipped');flipped=[];lock=false},800);
+        }
+    }
+}
+
+init();
+</script>
+</body>
+</html>

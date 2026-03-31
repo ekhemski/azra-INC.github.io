@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Click Master – Azra</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;overflow-x:hidden}
+
+/* Layout */
+.app{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;max-width:900px;margin:0 auto;min-height:100vh;gap:0}
+
+/* Header */
+.header{grid-column:1/-1;text-align:center;padding:1rem;background:linear-gradient(180deg,rgba(168,85,247,.1),transparent);border-bottom:1px solid rgba(255,255,255,.05)}
+.header h1{font-size:1.8rem;background:linear-gradient(135deg,#a855f7,#ec4899,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:3px;margin-bottom:.3rem}
+.header .pts{font-size:2.5rem;font-weight:900;background:linear-gradient(135deg,#ffd700,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header .per{color:#888;font-size:.85rem;margin-top:.2rem}
+
+/* Stats bar */
+.stats-bar{grid-column:1/-1;display:flex;justify-content:center;gap:1.5rem;padding:.5rem;background:rgba(0,0,0,.3);border-bottom:1px solid rgba(255,255,255,.05);flex-wrap:wrap}
+.stat-item{text-align:center}
+.stat-item .sv{font-weight:700;color:#a855f7;font-size:.95rem}
+.stat-item .sl{font-size:.6rem;color:#666;letter-spacing:1px}
+
+/* Click area */
+.click-area{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;gap:1rem;position:relative;overflow:hidden}
+
+/* The big button */
+.click-btn{width:clamp(120px,30vw,180px);height:clamp(120px,30vw,180px);border-radius:50%;border:4px solid #a855f7;background:radial-gradient(circle at 40% 40%,#2a2a5e,#1a1a3e);cursor:pointer;transition:transform .08s,box-shadow .08s;box-shadow:0 0 40px rgba(168,85,247,.2),inset 0 0 30px rgba(168,85,247,.1);-webkit-tap-highlight-color:transparent;display:flex;align-items:center;justify-content:center;flex-direction:column;position:relative;user-select:none}
+.click-btn:active{transform:scale(.92);box-shadow:0 0 60px rgba(168,85,247,.5),inset 0 0 40px rgba(168,85,247,.3)}
+.click-btn .emoji{font-size:3rem;pointer-events:none;transition:transform .1s}
+.click-btn:active .emoji{transform:scale(1.2)}
+.click-btn .cpc{font-size:.7rem;color:#a855f7;font-weight:700;letter-spacing:1px;pointer-events:none;margin-top:4px}
+
+/* Click multiplier button */
+.golden-btn{width:80px;height:80px;border-radius:50%;border:3px solid #ffd700;background:radial-gradient(circle at 40% 40%,#3d2e00,#1a1500);cursor:pointer;box-shadow:0 0 20px rgba(255,215,0,.2);display:none;align-items:center;justify-content:center;font-size:1.5rem;transition:all .3s;animation:goldenPulse 2s ease-in-out infinite;position:absolute;bottom:15%;right:15%}
+.golden-btn.show{display:flex}
+.golden-btn:active{transform:scale(.9)}
+@keyframes goldenPulse{0%,100%{box-shadow:0 0 20px rgba(255,215,0,.2)}50%{box-shadow:0 0 40px rgba(255,215,0,.5)}}
+
+/* Floating numbers */
+.floats{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden}
+.float-num{position:absolute;animation:floatUp .8s ease-out forwards;font-weight:900;pointer-events:none;font-size:1.2rem}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-60px) scale(1.3)}}
+.float-num.crit{font-size:1.8rem;color:#ffd700!important;text-shadow:0 0 10px rgba(255,215,0,.5)}
+
+/* Prestige button */
+.prestige-area{text-align:center;padding:.5rem}
+.prestige-btn{padding:8px 20px;border-radius:8px;border:2px solid #ffd700;background:rgba(255,215,0,.05);color:#ffd700;font-weight:700;cursor:pointer;transition:all .3s;font-family:inherit;font-size:.85rem}
+.prestige-btn:hover{background:rgba(255,215,0,.15);box-shadow:0 0 20px rgba(255,215,0,.3)}
+.prestige-btn:disabled{opacity:.3;cursor:not-allowed}
+
+/* Shop */
+.shop{padding:1rem;overflow-y:auto;max-height:calc(100vh - 200px)}
+.shop-title{font-size:1rem;font-weight:700;color:#a855f7;letter-spacing:2px;margin-bottom:.8rem;padding-bottom:.5rem;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:center}
+.shop-tabs{display:flex;gap:4px;margin-bottom:.8rem}
+.shop-tab{padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);cursor:pointer;font-size:.7rem;font-weight:600;color:#888;transition:all .3s;font-family:inherit}
+.shop-tab:hover{border-color:rgba(168,85,247,.3)}
+.shop-tab.sel{border-color:#a855f7;background:rgba(168,85,247,.15);color:#fff}
+
+.upgrade{display:flex;align-items:center;gap:.8rem;padding:.7rem;border-radius:10px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);cursor:pointer;transition:all .2s;margin-bottom:.5rem;position:relative;overflow:hidden}
+.upgrade::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.05),transparent);transition:.4s}
+.upgrade:hover::before{left:100%}
+.upgrade:hover{border-color:rgba(168,85,247,.3);background:rgba(168,85,247,.03);transform:translateX(3px)}
+.upgrade.locked{opacity:.3;cursor:not-allowed}
+.upgrade.locked:hover{transform:none;border-color:rgba(255,255,255,.06)}
+.upgrade.maxed{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.03)}
+.upg-icon{width:40px;height:40px;border-radius:10px;background:rgba(168,85,247,.1);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.upg-info{flex:1;min-width:0}
+.upg-name{font-weight:700;font-size:.85rem;display:flex;justify-content:space-between;align-items:center}
+.upg-name .lvl{color:#a855f7;font-size:.7rem}
+.upg-desc{font-size:.7rem;color:#888;margin-top:1px}
+.upg-effect{font-size:.65rem;color:#10b981;margin-top:2px}
+.upg-cost{font-size:.8rem;font-weight:700;color:#ffd700;white-space:nowrap;flex-shrink:0}
+
+/* Progress bars */
+.prog-bar{width:100%;height:3px;background:rgba(255,255,255,.05);border-radius:2px;margin-top:4px;overflow:hidden}
+.prog-fill{height:100%;border-radius:2px;transition:width .3s}
+
+/* Achievements panel */
+.ach-panel{grid-column:1/-1;padding:1rem;border-top:1px solid rgba(255,255,255,.05);background:rgba(0,0,0,.2)}
+.ach-grid{display:flex;gap:.5rem;overflow-x:auto;padding:.3rem 0}
+.ach{width:50px;height:50px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;position:relative;transition:all .3s}
+.ach.done{border-color:rgba(16,185,129,.5);background:rgba(16,185,129,.1);box-shadow:0 0 10px rgba(16,185,129,.2)}
+.ach.locked{opacity:.25;filter:grayscale(1)}
+.ach:hover .ach-tip{display:block}
+.ach-tip{display:none;position:absolute;bottom:110%;left:50%;transform:translateX(-50%);background:#1a1a3e;border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:6px 10px;font-size:.65rem;white-space:nowrap;color:#ccc;z-index:10;pointer-events:none}
+
+/* Notification */
+.notif{position:fixed;top:10px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:10px;font-weight:700;font-size:.85rem;z-index:100;animation:notifIn .3s ease;pointer-events:none}
+.notif.ach-notif{background:rgba(16,185,129,.15);border:1px solid #10b981;color:#10b981}
+@keyframes notifIn{0%{opacity:0;transform:translateX(-50%) translateY(-20px)}100%{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* Responsive */
+@media(max-width:600px){
+    .app{grid-template-columns:1fr;grid-template-rows:auto auto auto 1fr auto}
+    .click-area{padding:1rem;min-height:250px}
+    .shop{max-height:40vh}
+    .header .pts{font-size:2rem}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+    <!-- Header -->
+    <div class="header">
+        <h1>👆 CLICK MASTER</h1>
+        <div class="pts" id="points">0</div>
+        <div class="per" id="perInfo">+1 / klik · 0 / sek</div>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="stats-bar">
+        <div class="stat-item"><div class="sv" id="stClicks">0</div><div class="sl">KLIKNIĘCIA</div></div>
+        <div class="stat-item"><div class="sv" id="stTotal">0</div><div class="sl">TOTAL</div></div>
+        <div class="stat-item"><div class="sv" id="stCrit">0%</div><div class="sl">SZANSA KRYTA</div></div>
+        <div class="stat-item"><div class="sv" id="stPrestige">0</div><div class="sl">PRESTIŻ</div></div>
+    </div>
+
+    <!-- Click area -->
+    <div class="click-area" id="clickArea">
+        <div class="floats" id="floats"></div>
+        <div class="click-btn" id="clickBtn" onmousedown="doClick(event)" ontouchstart="doClick(event)">
+            <div class="emoji" id="btnEmoji">👆</div>
+            <div class="cpc" id="cpcLabel">+1</div>
+        </div>
+        <div class="golden-btn" id="goldenBtn" onclick="goldenClick()">💎</div>
+
+        <div class="prestige-area">
+            <button class="prestige-btn" id="prestigeBtn" onclick="doPrestige()" disabled>
+                ⭐ PRESTIŻ (wymaga 1M pkt)
+            </button>
+        </div>
+    </div>
+
+    <!-- Shop -->
+    <div class="shop" id="shop">
+        <div class="shop-title">🛒 SKLEP <span id="shopCoins" style="color:#ffd700;font-size:.8rem">💰 0</span></div>
+        <div class="shop-tabs">
+            <button class="shop-tab sel" onclick="switchTab('click',this)">👆 Kliknięcia</button>
+            <button class="shop-tab" onclick="switchTab('auto',this)">🤖 Automatyczne</button>
+            <button class="shop-tab" onclick="switchTab('special',this)">✨ Specjalne</button>
+        </div>
+        <div id="shopContent"></div>
+    </div>
+
+    <!-- Achievements -->
+    <div class="ach-panel">
+        <div style="font-size:.7rem;color:#666;letter-spacing:2px;font-weight:700;margin-bottom:.5rem">🏅 OSIĄGNIĘCIA <span id="achCount">0/0</span></div>
+        <div class="ach-grid" id="achGrid"></div>
+    </div>
+</div>
+
+<script>
+/* ========================================================
+   CLICK MASTER - Rozbudowana gra clicker
+   ======================================================== */
+
+// ===== ULEPSZENIA =====
+const UPGRADES = {
+    click: [
+        { id:'c1', name:'Mocniejszy palec', desc:'Kliknięcie +1', icon:'👆', baseCost:15, costMul:1.4, effect:'cpc', val:1, max:50 },
+        { id:'c2', name:'Podwójne kliknięcie', desc:'Kliknięcie +5', icon:'✌️', baseCost:200, costMul:1.5, effect:'cpc', val:5, max:30 },
+        { id:'c3', name:'Turbo palec', desc:'Kliknięcie +25', icon:'💪', baseCost:2000, costMul:1.6, effect:'cpc', val:25, max:20 },
+        { id:'c4', name:'Mega uderzenie', desc:'Kliknięcie +100', icon:'🔨', baseCost:15000, costMul:1.7, effect:'cpc', val:100, max:15 },
+        { id:'c5', name:'Boska moc', desc:'Kliknięcie +500', icon:'⚡', baseCost:100000, costMul:1.8, effect:'cpc', val:500, max:10 },
+        { id:'c6', name:'Szansa na kryta', desc:'+2% szansy na x10', icon:'🎯', baseCost:500, costMul:2, effect:'crit', val:2, max:15 },
+    ],
+    auto: [
+        { id:'a1', name:'Auto-kliker', desc:'+1 / sek', icon:'🤖', baseCost:50, costMul:1.35, effect:'cps', val:1, max:50 },
+        { id:'a2', name:'Robot pomocnik', desc:'+5 / sek', icon:'🦾', baseCost:400, costMul:1.45, effect:'cps', val:5, max:30 },
+        { id:'a3', name:'Maszyna klikająca', desc:'+20 / sek', icon:'⚙️', baseCost:3000, costMul:1.55, effect:'cps', val:20, max:25 },
+        { id:'a4', name:'Fabryka kliknięć', desc:'+100 / sek', icon:'🏭', baseCost:25000, costMul:1.65, effect:'cps', val:100, max:15 },
+        { id:'a5', name:'Centrum danych', desc:'+500 / sek', icon:'🖥️', baseCost:200000, costMul:1.75, effect:'cps', val:500, max:10 },
+        { id:'a6', name:'Kwantowy procesor', desc:'+2500 / sek', icon:'🧬', baseCost:1500000, costMul:1.85, effect:'cps', val:2500, max:8 },
+    ],
+    special: [
+        { id:'s1', name:'Złoty bonus', desc:'Złote kliknięcie pojawia się częściej', icon:'💎', baseCost:5000, costMul:2.5, effect:'golden', val:1, max:5 },
+        { id:'s2', name:'Mnożnik kryta', desc:'Krytyczne x15 zamiast x10', icon:'💥', baseCost:10000, costMul:3, effect:'critMul', val:5, max:3 },
+        { id:'s3', name:'Prestiż bonus', desc:'+50% bonusu z prestiżu', icon:'⭐', baseCost:50000, costMul:3.5, effect:'prestBonus', val:50, max:5 },
+        { id:'s4', name:'Magnetyzm', desc:'Auto-zbieranie złotych', icon:'🧲', baseCost:25000, costMul:4, effect:'magnet', val:1, max:3 },
+    ]
+};
+
+// ===== OSIĄGNIĘCIA =====
+const ACHIEVEMENTS = [
+    { id:'click10', name:'Początkujący', desc:'10 kliknięć', icon:'👶', check: s => s.totalClicks >= 10 },
+    { id:'click100', name:'Amator', desc:'100 kliknięć', icon:'👦', check: s => s.totalClicks >= 100 },
+    { id:'click1k', name:'Profesjonalista', desc:'1000 kliknięć', icon:'🧑', check: s => s.totalClicks >= 1000 },
+    { id:'click10k', name:'Mistrz kliku', desc:'10000 kliknięć', icon:'👨‍🎓', check: s => s.totalClicks >= 10000 },
+    { id:'pts1k', name:'Tysiącznik', desc:'Zdobądź 1000 pkt', icon:'🥉', check: s => s.totalEarned >= 1000 },
+    { id:'pts100k', name:'Bogacz', desc:'Zdobądź 100K pkt', icon:'🥈', check: s => s.totalEarned >= 100000 },
+    { id:'pts1m', name:'Milioner', desc:'Zdobądź 1M pkt', icon:'🥇', check: s => s.totalEarned >= 1000000 },
+    { id:'pts10m', name:'Magnat', desc:'Zdobądź 10M pkt', icon:'💰', check: s => s.totalEarned >= 10000000 },
+    { id:'upg5', name:'Kolekcjoner', desc:'Kup 5 ulepszeń', icon:'🛒', check: s => s.totalUpgrades >= 5 },
+    { id:'upg20', name:'Inwestor', desc:'Kup 20 ulepszeń', icon:'📈', check: s => s.totalUpgrades >= 20 },
+    { id:'crit1', name:'Szczęściarz', desc:'Traf krytyczne', icon:'🎯', check: s => s.totalCrits >= 1 },
+    { id:'crit50', name:'Snajper', desc:'50 krytycznych', icon:'🔫', check: s => s.totalCrits >= 50 },
+    { id:'prest1', name:'Odrodzenie', desc:'Pierwszy prestiż', icon:'⭐', check: s => s.prestiges >= 1 },
+    { id:'prest5', name:'Feniks', desc:'5 prestiży', icon:'🔥', check: s => s.prestiges >= 5 },
+    { id:'golden5', name:'Łowca złota', desc:'Złap 5 złotych', icon:'💎', check: s => s.goldenClicked >= 5 },
+    { id:'cps100', name:'Automatyzacja', desc:'100/sek', icon:'🤖', check: s => s.cps >= 100 },
+];
+
+// ===== STAN GRY =====
+let state = loadState();
+
+function defaultState() {
+    return {
+        points: 0,
+        totalEarned: 0,
+        totalClicks: 0,
+        totalCrits: 0,
+        totalUpgrades: 0,
+        cpc: 1,         // clicks per click
+        cps: 0,         // clicks per second
+        critChance: 0,
+        critMul: 10,
+        goldenLevel: 0,
+        magnetLevel: 0,
+        prestBonus: 100, // prestige bonus percentage
+        prestiges: 0,
+        prestigeMul: 1,
+        goldenClicked: 0,
+        upgradeLevels: {},
+        achievements: [],
+        lastSave: Date.now()
+    };
+}
+
+function loadState() {
+    let saved = localStorage.getItem('cm_state');
+    if (saved) {
+        let s = JSON.parse(saved);
+        // Merge with defaults for new properties
+        return { ...defaultState(), ...s };
+    }
+    return defaultState();
+}
+
+function saveState() {
+    state.lastSave = Date.now();
+    localStorage.setItem('cm_state', JSON.stringify(state));
+}
+
+// ===== OBLICZENIA =====
+function recalcStats() {
+    let cpc = 1, cps = 0, crit = 0, critMul = 10;
+    let goldenLvl = 0, magnetLvl = 0, prestBonus = 100;
+
+    for (let cat in UPGRADES) {
+        UPGRADES[cat].forEach(u => {
+            let lvl = state.upgradeLevels[u.id] || 0;
+            switch (u.effect) {
+                case 'cpc': cpc += u.val * lvl; break;
+                case 'cps': cps += u.val * lvl; break;
+                case 'crit': crit += u.val * lvl; break;
+                case 'critMul': critMul += u.val * lvl; break;
+                case 'golden': goldenLvl += lvl; break;
+                case 'magnet': magnetLvl += lvl; break;
+                case 'prestBonus': prestBonus += u.val * lvl; break;
+            }
+        });
+    }
+
+    state.cpc = Math.floor(cpc * state.prestigeMul);
+    state.cps = Math.floor(cps * state.prestigeMul);
+    state.critChance = Math.min(30, crit);
+    state.critMul = critMul;
+    state.goldenLevel = goldenLvl;
+    state.magnetLevel = magnetLvl;
+    state.prestBonus = prestBonus;
+}
+
+function getCost(upgrade) {
+    let lvl = state.upgradeLevels[upgrade.id] || 0;
+    return Math.floor(upgrade.baseCost * Math.pow(upgrade.costMul, lvl));
+}
+
+function formatNum(n) {
+    if (n >= 1e12) return (n / 1e12).toFixed(1) + 'T';
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return Math.floor(n).toString();
+}
+
+// ===== AKCJE =====
+function doClick(e) {
+    e.preventDefault();
+    state.totalClicks++;
+
+    let amount = state.cpc;
+    let isCrit = Math.random() * 100 < state.critChance;
+    if (isCrit) {
+        amount *= state.critMul;
+        state.totalCrits++;
+    }
+
+    state.points += amount;
+    state.totalEarned += amount;
+
+    // Float number
+    let area = document.getElementById('clickArea');
+    let rect = area.getBoundingClientRect();
+    let fx, fy;
+    if (e.touches) {
+        fx = e.touches[0].clientX - rect.left;
+        fy = e.touches[0].clientY - rect.top;
+    } else {
+        fx = e.clientX - rect.left;
+        fy = e.clientY - rect.top;
+    }
+    showFloat(fx + (Math.random() - 0.5) * 40, fy - 20, '+' + formatNum(amount), isCrit);
+
+    checkAchievements();
+    updateUI();
+}
+
+function showFloat(x, y, text, crit) {
+    let f = document.createElement('div');
+    f.className = 'float-num' + (crit ? ' crit' : '');
+    f.textContent = text;
+    f.style.left = x + 'px';
+    f.style.top = y + 'px';
+    f.style.color = crit ? '#ffd700' : '#a855f7';
+    document.getElementById('floats').appendChild(f);
+    setTimeout(() => f.remove(), 800);
+}
+
+// ===== GOLDEN CLICK =====
+let goldenTimer = null;
+
+function spawnGolden() {
+    let btn = document.getElementById('goldenBtn');
+    btn.classList.add('show');
+    // Losowa pozycja
+    let area = document.getElementById('clickArea');
+    let maxX = area.clientWidth - 100;
+    let maxY = area.clientHeight - 150;
+    btn.style.right = 'auto';
+    btn.style.bottom = 'auto';
+    btn.style.left = (20 + Math.random() * maxX) + 'px';
+    btn.style.top = (20 + Math.random() * Math.max(50, maxY)) + 'px';
+
+    // Znika po 5 sekundach
+    if (goldenTimer) clearTimeout(goldenTimer);
+    goldenTimer = setTimeout(() => {
+        btn.classList.remove('show');
+    }, 5000 + state.goldenLevel * 1000);
+}
+
+function goldenClick() {
+    document.getElementById('goldenBtn').classList.remove('show');
+    if (goldenTimer) clearTimeout(goldenTimer);
+
+    let bonus = Math.max(state.cps * 30, state.cpc * 50);
+    if (bonus < 100) bonus = 100;
+
+    state.points += bonus;
+    state.totalEarned += bonus;
+    state.goldenClicked++;
+
+    showNotif('💎 Złoty bonus! +' + formatNum(bonus));
+    checkAchievements();
+    updateUI();
+}
+
+// Spawn golden randomly
+setInterval(() => {
+    let chance = 0.005 + state.goldenLevel * 0.005 + state.magnetLevel * 0.01;
+    if (Math.random() < chance) spawnGolden();
+}, 1000);
+
+// ===== SKLEP =====
+let currentTab = 'click';
+
+function switchTab(tab, btn) {
+    currentTab = tab;
+    document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('sel'));
+    if (btn) btn.classList.add('sel');
+    renderShop();
+}
+
+function renderShop() {
+    let upgrades = UPGRADES[currentTab] || [];
+    let html = '';
+
+    upgrades.forEach(u => {
+        let lvl = state.upgradeLevels[u.id] || 0;
+        let cost = getCost(u);
+        let canBuy = state.points >= cost && lvl < u.max;
+        let maxed = lvl >= u.max;
+
+        let progPct = (lvl / u.max) * 100;
+
+        html += `<div class="upgrade ${!canBuy && !maxed ? 'locked' : ''} ${maxed ? 'maxed' : ''}" 
+                      onclick="${!maxed ? `buyUpgrade('${currentTab}','${u.id}')` : ''}">
+            <div class="upg-icon">${u.icon}</div>
+            <div class="upg-info">
+                <div class="upg-name">${u.name} <span class="lvl">Lv.${lvl}/${u.max}</span></div>
+                <div class="upg-desc">${u.desc}</div>
+                <div class="upg-effect">${maxed ? '✅ MAX' : u.effect === 'cpc' ? `+${u.val * state.prestigeMul}/klik` : u.effect === 'cps' ? `+${u.val * state.prestigeMul}/sek` : '+' + u.val}</div>
+                <div class="prog-bar"><div class="prog-fill" style="width:${progPct}%;background:${maxed ? '#10b981' : '#a855f7'}"></div></div>
+            </div>
+            <div class="upg-cost">${maxed ? '—' : '💰' + formatNum(cost)}</div>
+        </div>`;
+    });
+
+    document.getElementById('shopContent').innerHTML = html;
+    document.getElementById('shopCoins').textContent = '💰 ' + formatNum(state.points);
+}
+
+function buyUpgrade(cat, id) {
+    let upgrades = UPGRADES[cat];
+    let u = upgrades.find(x => x.id === id);
+    if (!u) return;
+
+    let lvl = state.upgradeLevels[u.id] || 0;
+    let cost = getCost(u);
+
+    if (state.points < cost || lvl >= u.max) return;
+
+    state.points -= cost;
+    state.upgradeLevels[u.id] = lvl + 1;
+    state.totalUpgrades++;
+
+    recalcStats();
+    checkAchievements();
+    renderShop();
+    updateUI();
+    saveState();
+}
+
+// ===== PRESTIŻ =====
+function doPrestige() {
+    if (state.totalEarned < 1000000) return;
+    if (!confirm('Prestiż zresetuje punkty i ulepszenia, ale dostaniesz x' + ((state.prestBonus) / 100).toFixed(1) + ' mnożnik na zawsze. Kontynuować?')) return;
+
+    state.prestiges++;
+    state.prestigeMul *= state.prestBonus / 100;
+    if (state.prestigeMul < 1) state.prestigeMul = 1;
+
+    state.points = 0;
+    state.totalEarned = 0;
+    state.totalClicks = 0;
+    state.totalCrits = 0;
+    state.totalUpgrades = 0;
+    state.upgradeLevels = {};
+    state.goldenClicked = 0;
+
+    recalcStats();
+    checkAchievements();
+    renderShop();
+    renderAchievements();
+    updateUI();
+    saveState();
+
+    showNotif('⭐ Prestiż! Mnożnik: x' + state.prestigeMul.toFixed(1));
+}
+
+// ===== OSIĄGNIĘCIA =====
+function checkAchievements() {
+    ACHIEVEMENTS.forEach(a => {
+        if (!state.achievements.includes(a.id) && a.check(state)) {
+            state.achievements.push(a.id);
+            showNotif('🏅 ' + a.name + ': ' + a.desc);
+            state.points += Math.max(100, state.cpc * 10);
+            renderAchievements();
+        }
+    });
+}
+
+function renderAchievements() {
+    document.getElementById('achGrid').innerHTML = ACHIEVEMENTS.map(a => {
+        let done = state.achievements.includes(a.id);
+        return `<div class="ach ${done ? 'done' : 'locked'}">
+            ${a.icon}
+            <div class="ach-tip">${a.name}: ${a.desc}</div>
+        </div>`;
+    }).join('');
+    document.getElementById('achCount').textContent = state.achievements.length + '/' + ACHIEVEMENTS.length;
+}
+
+function showNotif(text) {
+    let n = document.createElement('div');
+    n.className = 'notif ach-notif';
+    n.textContent = text;
+    document.body.appendChild(n);
+    setTimeout(() => n.remove(), 3000);
+}
+
+// ===== UI UPDATE =====
+function updateUI() {
+    document.getElementById('points').textContent = formatNum(state.points);
+    document.getElementById('perInfo').textContent = `+${formatNum(state.cpc)} / klik · ${formatNum(state.cps)} / sek` + (state.prestigeMul > 1 ? ` · x${state.prestigeMul.toFixed(1)} prestiż` : '');
+    document.getElementById('cpcLabel').textContent = '+' + formatNum(state.cpc);
+
+    document.getElementById('stClicks').textContent = formatNum(state.totalClicks);
+    document.getElementById('stTotal').textContent = formatNum(state.totalEarned);
+    document.getElementById('stCrit').textContent = state.critChance + '%';
+    document.getElementById('stPrestige').textContent = state.prestiges;
+
+    // Prestige button
+    let pBtn = document.getElementById('prestigeBtn');
+    pBtn.disabled = state.totalEarned < 1000000;
+    pBtn.textContent = state.totalEarned >= 1000000
+        ? `⭐ PRESTIŻ (x${(state.prestBonus / 100).toFixed(1)} mnożnik)`
+        : `⭐ PRESTIŻ (wymaga ${formatNum(1000000 - state.totalEarned)} pkt)`;
+
+    // Emoji zmienia się z poziomem
+    let emoji = '👆';
+    if (state.cpc > 5000) emoji = '💎';
+    else if (state.cpc > 1000) emoji = '⚡';
+    else if (state.cpc > 500) emoji = '🔥';
+    else if (state.cpc > 100) emoji = '💪';
+    else if (state.cpc > 25) emoji = '✊';
+    else if (state.cpc > 5) emoji = '👊';
+    document.getElementById('btnEmoji').textContent = emoji;
+
+    // Wyślij wynik do portalu
+    try { window.parent.postMessage({ type: 'azra_score', score: Math.floor(state.totalEarned / 100) }, '*'); } catch (e) { }
+}
+
+// ===== AUTO INCOME =====
+setInterval(() => {
+    if (state.cps > 0) {
+        let gain = state.cps / 10;
+        state.points += gain;
+        state.totalEarned += gain;
+        updateUI();
+        renderShop();
+    }
+}, 100);
+
+// Auto save
+setInterval(saveState, 10000);
+
+// ===== INIT =====
+recalcStats();
+renderShop();
+renderAchievements();
+updateUI();
+</script>
+</body>
+</html>

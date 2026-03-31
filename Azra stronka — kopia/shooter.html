@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kosmiczny Strzelec – Azra</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:'Segoe UI',sans-serif;overflow:hidden;color:#fff}
+canvas{border:2px solid #3b82f6;border-radius:8px;box-shadow:0 0 30px rgba(59,130,246,.4)}
+#ui{position:absolute;top:10px;display:flex;gap:2rem;font-weight:700;text-shadow:0 0 10px rgba(59,130,246,.8)}
+#start{position:absolute;text-align:center}
+#start h1{font-size:2.5rem;background:linear-gradient(135deg,#3b82f6,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:1rem}
+#sBtn{padding:1rem 3rem;font-size:1.2rem;font-weight:700;border:none;border-radius:8px;background:linear-gradient(135deg,#3b82f6,#06b6d4);color:#fff;cursor:pointer;letter-spacing:2px}
+#sBtn:hover{transform:scale(1.05);box-shadow:0 0 30px rgba(59,130,246,.6)}
+#mob{position:absolute;bottom:15px;display:none;gap:8px}
+#mob button{width:65px;height:65px;border-radius:50%;border:2px solid #3b82f6;background:rgba(59,130,246,.2);color:#fff;font-size:1.3rem;cursor:pointer}
+@media(max-width:600px){#mob{display:flex}}
+</style>
+</head>
+<body>
+<div id="ui" style="display:none"><span>🚀 Wynik: <span id="sc">0</span></span><span>❤️ Życia: <span id="hp">3</span></span></div>
+<div id="start"><h1>🚀 KOSMICZNY STRZELEC</h1><p style="color:#aaa;margin-bottom:1rem">← → sterowanie, SPACJA strzał</p><button id="sBtn" onclick="startGame()">START</button></div>
+<canvas id="c" style="display:none"></canvas>
+<div id="mob"><button ontouchstart="k.left=true" ontouchend="k.left=false">◀</button><button ontouchstart="shoot()" >🔫</button><button ontouchstart="k.right=true" ontouchend="k.right=false">▶</button></div>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+let W,H,ship,bullets,enemies,stars,particles,score,hp,run,spd,frame;
+const k={left:false,right:false};
+
+function resize(){W=Math.min(400,window.innerWidth-20);H=Math.min(600,window.innerHeight-100);c.width=W;c.height=H}
+
+function startGame(){
+    document.getElementById('start').style.display='none';c.style.display='block';document.getElementById('ui').style.display='flex';
+    resize();
+    ship={x:W/2-15,y:H-50,w:30,h:30};bullets=[];enemies=[];particles=[];score=0;hp=3;run=true;spd=1;frame=0;
+    stars=Array.from({length:60},()=>({x:Math.random()*W,y:Math.random()*H,s:Math.random()*2+.5,sp:Math.random()*2+1}));
+    loop();
+}
+
+function shoot(){
+    bullets.push({x:ship.x+ship.w/2-2,y:ship.y-5,w:4,h:10,dy:-7});
+}
+
+function spawnEnemy(){
+    let w=20+Math.random()*25,ex=Math.random()*(W-w);
+    enemies.push({x:ex,y:-30,w:w,h:25,dy:1.5+Math.random()*spd,hp:1,color:['#ef4444','#f59e0b','#ec4899'][Math.floor(Math.random()*3)]});
+}
+
+function addParticles(px,py,col){for(let i=0;i<8;i++)particles.push({x:px,y:py,dx:(Math.random()-.5)*4,dy:(Math.random()-.5)*4,life:30,color:col})}
+
+function update(){
+    frame++;
+    if(k.left)ship.x-=5;if(k.right)ship.x+=5;
+    ship.x=Math.max(0,Math.min(W-ship.w,ship.x));
+    // Stars
+    stars.forEach(s=>{s.y+=s.sp;if(s.y>H){s.y=0;s.x=Math.random()*W}});
+    // Bullets
+    for(let i=bullets.length-1;i>=0;i--){bullets[i].y+=bullets[i].dy;if(bullets[i].y<-10)bullets.splice(i,1)}
+    // Enemies
+    if(frame%Math.max(20,60-score)===0)spawnEnemy();
+    for(let i=enemies.length-1;i>=0;i--){
+        enemies[i].y+=enemies[i].dy;
+        if(enemies[i].y>H){enemies.splice(i,1);continue}
+        // Hit by bullet?
+        for(let j=bullets.length-1;j>=0;j--){
+            if(bullets[j].x<enemies[i].x+enemies[i].w&&bullets[j].x+bullets[j].w>enemies[i].x&&bullets[j].y<enemies[i].y+enemies[i].h&&bullets[j].y+bullets[j].h>enemies[i].y){
+                addParticles(enemies[i].x+enemies[i].w/2,enemies[i].y+enemies[i].h/2,enemies[i].color);
+                enemies.splice(i,1);bullets.splice(j,1);score++;break;
+            }
+        }
+        // Hit ship?
+        if(i<enemies.length&&enemies[i]){
+            let e=enemies[i];
+            if(ship.x<e.x+e.w&&ship.x+ship.w>e.x&&ship.y<e.y+e.h&&ship.y+ship.h>e.y){
+                addParticles(e.x+e.w/2,e.y+e.h/2,'#ff0');enemies.splice(i,1);hp--;
+                if(hp<=0){gameOver();return}
+            }
+        }
+    }
+    // Particles
+    for(let i=particles.length-1;i>=0;i--){particles[i].x+=particles[i].dx;particles[i].y+=particles[i].dy;particles[i].life--;if(particles[i].life<=0)particles.splice(i,1)}
+    spd=1+score*.05;
+    document.getElementById('sc').textContent=score;document.getElementById('hp').textContent=hp;
+}
+
+function draw(){
+    x.fillStyle='#0a0a1a';x.fillRect(0,0,W,H);
+    // Stars
+    stars.forEach(s=>{x.fillStyle=`rgba(255,255,255,${s.s/3})`;x.fillRect(s.x,s.y,s.s,s.s)});
+    // Ship
+    x.fillStyle='#3b82f6';x.beginPath();x.moveTo(ship.x+ship.w/2,ship.y);x.lineTo(ship.x,ship.y+ship.h);x.lineTo(ship.x+ship.w,ship.y+ship.h);x.closePath();x.fill();
+    x.fillStyle='#60a5fa';x.fillRect(ship.x+ship.w/2-3,ship.y+ship.h,6,8);
+    // Bullets
+    bullets.forEach(b=>{x.fillStyle='#ffd700';x.fillRect(b.x,b.y,b.w,b.h);x.fillStyle='rgba(255,215,0,.3)';x.fillRect(b.x-2,b.y,b.w+4,b.h+5)});
+    // Enemies
+    enemies.forEach(e=>{x.fillStyle=e.color;x.fillRect(e.x,e.y,e.w,e.h);x.fillStyle='rgba(0,0,0,.3)';x.fillRect(e.x+4,e.y+4,e.w-8,e.h-8)});
+    // Particles
+    particles.forEach(p=>{x.globalAlpha=p.life/30;x.fillStyle=p.color;x.fillRect(p.x,p.y,3,3);x.globalAlpha=1});
+}
+
+function loop(){if(!run)return;update();draw();requestAnimationFrame(loop)}
+
+function gameOver(){
+    run=false;
+    x.fillStyle='rgba(0,0,0,.7)';x.fillRect(0,0,W,H);
+    x.fillStyle='#fff';x.font='bold 32px sans-serif';x.textAlign='center';
+    x.fillText('KONIEC GRY',W/2,H/2-30);
+    x.font='22px sans-serif';x.fillText('Wynik: '+score,W/2,H/2+15);
+    x.font='14px sans-serif';x.fillStyle='#3b82f6';x.fillText('Kliknij aby zagrać ponownie',W/2,H/2+55);
+    try{window.parent.postMessage({type:'azra_score',score:score*15},'*')}catch(e){}
+    c.onclick=()=>{c.onclick=null;startGame()};
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='a')k.left=true;if(e.key==='ArrowRight'||e.key==='d')k.right=true;if(e.key===' '){e.preventDefault();shoot()}});
+document.addEventListener('keyup',e=>{if(e.key==='ArrowLeft'||e.key==='a')k.left=false;if(e.key==='ArrowRight'||e.key==='d')k.right=false});
+</script>
+</body>
+</html>

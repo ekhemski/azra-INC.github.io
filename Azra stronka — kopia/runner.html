@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neon Runner – Azra</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:'Segoe UI',sans-serif;overflow:hidden;color:#fff}
+canvas{border:2px solid #ec4899;border-radius:8px;box-shadow:0 0 30px rgba(236,72,153,.4)}
+#ui{position:absolute;top:10px;font-weight:700;text-shadow:0 0 10px rgba(236,72,153,.8)}
+#start{position:absolute;text-align:center}
+#start h1{font-size:2.5rem;background:linear-gradient(135deg,#ec4899,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:1rem}
+#sBtn{padding:1rem 3rem;font-size:1.2rem;font-weight:700;border:none;border-radius:8px;background:linear-gradient(135deg,#ec4899,#a855f7);color:#fff;cursor:pointer}
+#sBtn:hover{transform:scale(1.05)}
+</style>
+</head>
+<body>
+<div id="ui" style="display:none">🏃 Wynik: <span id="sc">0</span></div>
+<div id="start"><h1>🏃 NEON RUNNER</h1><p style="color:#aaa;margin-bottom:1rem">SPACJA lub kliknij/tapnij aby skakać. Podwójny skok dostępny!</p><button id="sBtn" onclick="startGame()">BIEGNIJ!</button></div>
+<canvas id="c" style="display:none"></canvas>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+let W,H,player,obs,score,speed,run,frame,groundY;
+
+function resize(){W=Math.min(600,window.innerWidth-20);H=Math.min(300,window.innerHeight-80);c.width=W;c.height=H;groundY=H-40}
+
+function startGame(){
+    document.getElementById('start').style.display='none';c.style.display='block';document.getElementById('ui').style.display='block';
+    resize();
+    player={x:60,y:groundY,w:30,h:40,vy:0,jumping:false,jumps:0,maxJumps:2};
+    obs=[];score=0;speed=4;run=true;frame=0;
+    loop();
+}
+
+function jump(){
+    if(player.jumps<player.maxJumps){player.vy=-10;player.jumping=true;player.jumps++}
+}
+
+function spawnObs(){
+    let h=20+Math.random()*30,w=15+Math.random()*20;
+    obs.push({x:W+10,y:groundY-h,w:w,h:h,color:['#ef4444','#f59e0b','#10b981'][Math.floor(Math.random()*3)]});
+}
+
+function update(){
+    frame++;
+    // Gravity
+    player.vy+=0.6;player.y+=player.vy;
+    if(player.y>=groundY){player.y=groundY;player.vy=0;player.jumping=false;player.jumps=0}
+    // Obstacles
+    if(frame%Math.max(30,80-Math.floor(score/5))===0)spawnObs();
+    for(let i=obs.length-1;i>=0;i--){
+        obs[i].x-=speed;
+        if(obs[i].x+obs[i].w<0){obs.splice(i,1);score++;continue}
+        // Collision
+        if(player.x+player.w>obs[i].x&&player.x<obs[i].x+obs[i].w&&player.y+player.h>obs[i].y){gameOver();return}
+    }
+    speed=4+score*.1;
+    document.getElementById('sc').textContent=score;
+}
+
+function draw(){
+    // Sky
+    let sky=x.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#0a0a1a');sky.addColorStop(1,'#1a1a3e');
+    x.fillStyle=sky;x.fillRect(0,0,W,H);
+    // Ground
+    x.fillStyle='#1e1e4a';x.fillRect(0,groundY+player.h,W,H-groundY);
+    x.strokeStyle='#ec4899';x.lineWidth=2;x.beginPath();x.moveTo(0,groundY+player.h);x.lineTo(W,groundY+player.h);x.stroke();
+    // Ground dots
+    for(let i=(frame*speed)%20-20;i<W;i+=20){x.fillStyle='rgba(236,72,153,.3)';x.fillRect(i,groundY+player.h+5,2,2)}
+    // Player
+    let py=player.y;
+    // Body
+    x.fillStyle='#ec4899';x.fillRect(player.x,py,player.w,player.h);
+    // Head
+    x.fillStyle='#f9a8d4';x.fillRect(player.x+5,py-10,20,12);
+    // Eye
+    x.fillStyle='#fff';x.fillRect(player.x+18,py-7,5,5);
+    x.fillStyle='#000';x.fillRect(player.x+20,py-6,3,3);
+    // Legs (animated)
+    if(!player.jumping){
+        let legOff=Math.sin(frame*.3)*5;
+        x.fillStyle='#a855f7';x.fillRect(player.x+5,py+player.h,6,8+legOff);x.fillRect(player.x+player.w-11,py+player.h,6,8-legOff);
+    }else{
+        x.fillStyle='#a855f7';x.fillRect(player.x+5,py+player.h,6,5);x.fillRect(player.x+player.w-11,py+player.h,6,5);
+    }
+    // Obstacles
+    obs.forEach(o=>{
+        x.fillStyle=o.color;x.fillRect(o.x,o.y,o.w,o.h+player.h);
+        x.fillStyle='rgba(0,0,0,.2)';x.fillRect(o.x+3,o.y+3,o.w-6,o.h+player.h-6);
+    });
+}
+
+function loop(){if(!run)return;update();draw();requestAnimationFrame(loop)}
+
+function gameOver(){
+    run=false;
+    x.fillStyle='rgba(0,0,0,.7)';x.fillRect(0,0,W,H);
+    x.fillStyle='#fff';x.font='bold 30px sans-serif';x.textAlign='center';
+    x.fillText('KONIEC!',W/2,H/2-20);
+    x.font='20px sans-serif';x.fillText('Wynik: '+score,W/2,H/2+15);
+    x.font='14px sans-serif';x.fillStyle='#ec4899';x.fillText('Kliknij aby zagrać ponownie',W/2,H/2+50);
+    try{window.parent.postMessage({type:'azra_score',score:score*12},'*')}catch(e){}
+    c.onclick=()=>{c.onclick=null;startGame()};
+}
+
+document.addEventListener('keydown',e=>{if(e.key===' '){e.preventDefault();jump()}});
+c.addEventListener('click',jump);
+c.addEventListener('touchstart',e=>{e.preventDefault();jump()});
+</script>
+</body>
+</html>
